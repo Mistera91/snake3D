@@ -1,6 +1,8 @@
 def setup():
     global map, keys, cam
     fullScreen(P3D)
+    textAlign(CENTER, CENTER)
+    textMode(SHAPE)
     rectMode(CENTER)
     class map:
         sizeX     = width
@@ -80,17 +82,25 @@ def keyReleased():
 
 def draw():
     if keys.LEFT_ARROW and not keys.RIGHT_ARROW:
-        cam.yaw = (cam.yaw - 1) % 360
+        cam.yaw = (cam.yaw - 2) % 360
     if keys.RIGHT_ARROW and not keys.LEFT_ARROW:
-        cam.yaw = (cam.yaw + 1) % 360
+        cam.yaw = (cam.yaw + 2) % 360
     if keys.UP_ARROW and not keys.DOWN_ARROW:
         cam.pitch = constrain(cam.pitch - 1, 1, 179)
     if keys.DOWN_ARROW and not keys.UP_ARROW:
         cam.pitch = constrain(cam.pitch + 1, 1, 179)
     background(0)
-    cam.lookingAtX = cam.eyeX + width * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
-    cam.lookingAtY = cam.eyeY - height * cos(radians(cam.pitch))
-    cam.lookingAtZ = cam.eyeZ + width * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
+    cam.lookingAtX = cam.eyeX + 10 * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
+    cam.lookingAtY = cam.eyeY - 10 * cos(radians(cam.pitch))
+    cam.lookingAtZ = cam.eyeZ + 10 * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
+    if keys.Z and not keys.S:
+        cam.eyeX = cam.eyeX + 5 * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
+        cam.eyeY = cam.eyeY - 5 * cos(radians(cam.pitch))
+        cam.eyeZ = cam.eyeZ + 5 * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
+    if keys.S and not keys.Z:
+        cam.eyeX = cam.eyeX - 5 * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
+        cam.eyeY = cam.eyeY + 5 * cos(radians(cam.pitch))
+        cam.eyeZ = cam.eyeZ - 5 * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
     camera(
     cam.eyeX      , cam.eyeY      , cam.eyeZ      ,
     cam.lookingAtX, cam.lookingAtY, cam.lookingAtZ,
