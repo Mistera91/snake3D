@@ -1,4 +1,4 @@
-# snake3d
+# snake3d (WIP)
 
 #### Snake3D using PyProcessing ([py.processing.org](py.processing.org))
 
