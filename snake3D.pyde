@@ -5,20 +5,23 @@ def setup():
     textMode(SHAPE)
     rectMode(CENTER)
     class snake:
-        speed = width / 100
+        speed = width / 200
+        size  = width / 50
+        snake = [[0, 0, 0]] * 120
+        color = 100, 200, 100
 
     class map:
-        sizeX     = width
-        sizeY     = height
-        sizeZ     = width
-        padding   = width / 18
+        sizeX      = width
+        sizeY      = height
+        sizeZ      = width
+        frameCount = 0
 
     class apple:
         X             = random(-map.sizeX / 2, map.sizeX / 2)
         Y             = random(-map.sizeY / 2, map.sizeY / 2)
         Z             = random(-map.sizeZ / 2, map.sizeZ / 2)
         color         = 200,  50,  50
-        size          = width / 100
+        size          = width / 50
         eatHitboxSize = 3 * size 
         touched       = False
     
@@ -36,6 +39,10 @@ def setup():
         pitch          = 90
         sensivityYaw   = 3
         sensivityPitch = 2
+        fov            = 180 # FOV (field of view) in degres, converted later on to radians
+        aspectRatio    = width / float(height)
+        nearClipPlane  = 1
+        farClipPlane   = map.sizeX * 1.414213562
 
     class keys:
         Z           = False
@@ -96,8 +103,8 @@ def keyReleased():
         keys.RIGHT_ARROW = False
 
 def draw():
-    strokeWeight(5)
-    stroke(255)
+    background(0)
+    map.frameCount += 1
     if keys.LEFT_ARROW and not keys.RIGHT_ARROW:
         cam.yaw = (cam.yaw - 3) % 360
     if keys.RIGHT_ARROW and not keys.LEFT_ARROW:
@@ -106,44 +113,47 @@ def draw():
         cam.pitch = constrain(cam.pitch - 2, 1, 179)
     if keys.DOWN_ARROW and not keys.UP_ARROW:
         cam.pitch = constrain(cam.pitch + 2, 1, 179)
-    background(0)
     cam.lookingAtX = cam.eyeX + snake.speed * 10 * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
     cam.lookingAtY = cam.eyeY - snake.speed * 10 * cos(radians(cam.pitch))
     cam.lookingAtZ = cam.eyeZ + snake.speed * 10 * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
-    if keys.Z and not keys.S:
-        cam.eyeX = cam.eyeX + snake.speed * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
-        cam.eyeY = cam.eyeY - snake.speed * cos(radians(cam.pitch))
-        cam.eyeZ = cam.eyeZ + snake.speed * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
-    if keys.S and not keys.Z:
-        cam.eyeX = cam.eyeX - snake.speed * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
-        cam.eyeY = cam.eyeY + snake.speed * cos(radians(cam.pitch))
-        cam.eyeZ = cam.eyeZ - snake.speed * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
+    cam.eyeX = cam.eyeX + snake.speed * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
+    cam.eyeY = cam.eyeY - snake.speed * cos(radians(cam.pitch))
+    cam.eyeZ = cam.eyeZ + snake.speed * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
     cam.eyeX %= map.sizeX
     cam.eyeY %= map.sizeY
     cam.eyeZ %= map.sizeZ
     camera(cam.eyeX      , cam.eyeY      , cam.eyeZ      ,
            cam.lookingAtX, cam.lookingAtY, cam.lookingAtZ,
            cam.xAxisIsUp , cam.yAxisIsUp , cam.zAxisIsUp )
-    pointLight(255, 255, 255, map.sizeX / 2.0, map.sizeY / 8, map.sizeZ / 2.0)
-    translate(map.sizeX / 2.0, map.sizeY / 2.0, map.sizeZ / 2.0)
+    perspective(PI / (360.0 / float(cam.fov)), cam.aspectRatio, cam.nearClipPlane, cam.farClipPlane)
     if  abs(cam.eyeX - map.sizeX / 2- apple.X) - apple.eatHitboxSize < 0\
     and abs(cam.eyeY - map.sizeY / 2- apple.Y) - apple.eatHitboxSize < 0\
     and abs(cam.eyeZ - map.sizeZ / 2- apple.Z) - apple.eatHitboxSize < 0:
         apple.X = random(-map.sizeX / 2, map.sizeX / 2)
         apple.Y = random(-map.sizeY / 2, map.sizeY / 2)
         apple.Z = random(-map.sizeZ / 2, map.sizeZ / 2)
+    if frameCount % 5 == 0:
+        for index in range(len(snake.snake)):
+            if index == len(snake.snake) - 1:
+                snake.snake[index] = [cam.eyeX - map.sizeX / 2, cam.eyeY - map.sizeY / 2, cam.eyeZ - map.sizeZ / 2]
+            else:
+                snake.snake[index] = snake.snake[index + 1]
     # Rendering part
+    pointLight(255, 255, 255, map.sizeX / 2.0, map.sizeY / 8, map.sizeZ / 2.0)
+    translate(map.sizeX / 2.0, map.sizeY / 2.0, map.sizeZ / 2.0)
+    strokeWeight(5)
+    stroke(255)
     pushMatrix() # Global matrix
     pushMatrix() # Negative X wall matrix
-    translate(- map.sizeX / 2.0 - map.padding, 0, 0)
+    translate(- map.sizeX / 2.0, 0, 0)
     fill(100,  50,  50)
-    box(0, map.sizeY + map.padding * 2, map.sizeZ + map.padding * 2)
+    box(0, map.sizeY, map.sizeZ)
     popMatrix() # End of negative X wall matrix
     
     pushMatrix() # Positive X wall matrix
-    translate(map.sizeX / 2.0 + map.padding, 0, 0)
+    translate(map.sizeX / 2.0, 0, 0)
     fill(200, 100, 100)
-    box(0, map.sizeY + map.padding * 2, map.sizeZ + map.padding * 2)
+    box(0, map.sizeY, map.sizeZ)
     fill(255)
     textSize(36)
     rotateY(- HALF_PI)
@@ -151,27 +161,27 @@ def draw():
     popMatrix() # End of positive X wall matrix
     
     pushMatrix() # Positive Y wall matrix
-    translate(0, map.sizeY / 2.0 + map.padding, 0)
+    translate(0, map.sizeY / 2.0, 0)
     fill(100, 200, 100)
-    box(map.sizeX + map.padding * 2, 0, map.sizeZ + map.padding * 2)
+    box(map.sizeX, 0, map.sizeZ)
     popMatrix() # End of positive Y wall matrix
     
     pushMatrix() # Negative Y wall matrix
-    translate(0, - map.sizeY / 2.0 - map.padding, 0)
+    translate(0, - map.sizeY / 2.0, 0)
     fill( 50, 100,  50)
-    box(map.sizeX + map.padding * 2, 0, map.sizeZ + map.padding * 2)
+    box(map.sizeX, 0, map.sizeZ)
     popMatrix() # End of negative Y wall matrix
     
     pushMatrix() # Positive Z wall matrix
-    translate(0, 0, map.sizeZ / 2.0 + map.padding)
+    translate(0, 0, map.sizeZ / 2.0)
     fill(100, 100, 200)
-    box(map.sizeX + map.padding * 2, map.sizeY + map.padding * 2, 0)
+    box(map.sizeX, map.sizeY, 0)
     popMatrix() # End of negative Y wall matrix
     
     pushMatrix() # Negative Z wall matrix
-    translate(0, 0, -map.sizeZ / 2.0 - map.padding)
+    translate(0, 0, -map.sizeZ / 2.0)
     fill( 50,  50, 100)
-    box(map.sizeX + map.padding * 2, map.sizeY + map.padding * 2, 0)
+    box(map.sizeX, map.sizeY, 0)
     popMatrix() # End of negative Y wall matrix
 
     pushMatrix() # Apple matrix
@@ -180,5 +190,14 @@ def draw():
     fill(apple.color[0], apple.color[1], apple.color[2])
     sphere(apple.size)
     popMatrix() # End of apple matrix
+
+    pushMatrix() # Snake matrix
+    fill(snake.color[0], snake.color[1], snake.color[2])
+    for ball in snake.snake:
+        pushMatrix()
+        translate(ball[0], ball[1], ball[2])
+        #sphere(snake.size)
+        popMatrix()
+    popMatrix() # End of snake matrix
 
     popMatrix() # End of global matrix
