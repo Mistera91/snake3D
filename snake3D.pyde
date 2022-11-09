@@ -6,8 +6,8 @@ def setup():
     rectMode(CENTER)
     class snake:
         speed = width / 200
-        size  = width / 50
-        snake = [[0, 0, 0]] * 120
+        size  = width / 40
+        snake = [[0, 0, 0]] * 100
         color = 100, 200, 100
 
     class map:
@@ -15,6 +15,8 @@ def setup():
         sizeY      = height
         sizeZ      = width
         frameCount = 0
+        announcedText         = ""
+        announcedTextFrames   = 0
 
     class apple:
         X             = random(-map.sizeX / 2, map.sizeX / 2)
@@ -26,7 +28,7 @@ def setup():
         touched       = False
     
     class cam:
-        eyeX           = map.sizeX / 2.0
+        eyeX           = map.sizeX / 2.0 + snake.size
         eyeY           = map.sizeY / 2.0
         eyeZ           = map.sizeZ / 2.0
         lookingAtX     = 0
@@ -104,7 +106,8 @@ def keyReleased():
 
 def draw():
     background(0)
-    map.frameCount += 1
+    map.announcedTextFrames -= 1
+    map.frameCount          += 1
     if keys.LEFT_ARROW and not keys.RIGHT_ARROW:
         cam.yaw = (cam.yaw - 3) % 360
     if keys.RIGHT_ARROW and not keys.LEFT_ARROW:
@@ -116,9 +119,10 @@ def draw():
     cam.lookingAtX = cam.eyeX + snake.speed * 10 * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
     cam.lookingAtY = cam.eyeY - snake.speed * 10 * cos(radians(cam.pitch))
     cam.lookingAtZ = cam.eyeZ + snake.speed * 10 * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
-    cam.eyeX = cam.eyeX + snake.speed * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
-    cam.eyeY = cam.eyeY - snake.speed * cos(radians(cam.pitch))
-    cam.eyeZ = cam.eyeZ + snake.speed * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
+    if not keys.S:
+        cam.eyeX = cam.eyeX + snake.speed * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
+        cam.eyeY = cam.eyeY - snake.speed * cos(radians(cam.pitch))
+        cam.eyeZ = cam.eyeZ + snake.speed * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
     cam.eyeX %= map.sizeX
     cam.eyeY %= map.sizeY
     cam.eyeZ %= map.sizeZ
@@ -128,7 +132,9 @@ def draw():
     perspective(PI / (360.0 / float(cam.fov)), cam.aspectRatio, cam.nearClipPlane, cam.farClipPlane)
     if  abs(cam.eyeX - map.sizeX / 2- apple.X) - apple.eatHitboxSize < 0\
     and abs(cam.eyeY - map.sizeY / 2- apple.Y) - apple.eatHitboxSize < 0\
-    and abs(cam.eyeZ - map.sizeZ / 2- apple.Z) - apple.eatHitboxSize < 0:
+    and abs(cam.eyeZ - map.sizeZ / 2- apple.Z) - apple.eatHitboxSize < 0: # Eating apple
+        for i in range(50):
+            snake.snake.insert(0, (snake.snake[0]))
         apple.X = random(-map.sizeX / 2, map.sizeX / 2)
         apple.Y = random(-map.sizeY / 2, map.sizeY / 2)
         apple.Z = random(-map.sizeZ / 2, map.sizeZ / 2)
@@ -139,6 +145,7 @@ def draw():
             else:
                 snake.snake[index] = snake.snake[index + 1]
     # Rendering part
+    ambientLight( 63,  63,  63)
     pointLight(255, 255, 255, map.sizeX / 2.0, map.sizeY / 8, map.sizeZ / 2.0)
     translate(map.sizeX / 2.0, map.sizeY / 2.0, map.sizeZ / 2.0)
     strokeWeight(5)
@@ -154,10 +161,11 @@ def draw():
     translate(map.sizeX / 2.0, 0, 0)
     fill(200, 100, 100)
     box(0, map.sizeY, map.sizeZ)
-    fill(255)
-    textSize(36)
-    rotateY(- HALF_PI)
-    text("Yaw : " + str(cam.yaw) + ", Pitch : " + str(cam.pitch), 0, 0, map.sizeX / 4)
+    if map.announcedTextFrames > 0:
+        fill(255)
+        textSize(36)
+        rotateY(- HALF_PI)
+        text(map.announcedText, 0, 0, map.sizeX / 4)
     popMatrix() # End of positive X wall matrix
     
     pushMatrix() # Positive Y wall matrix
@@ -190,13 +198,29 @@ def draw():
     fill(apple.color[0], apple.color[1], apple.color[2])
     sphere(apple.size)
     popMatrix() # End of apple matrix
-
+    
     pushMatrix() # Snake matrix
     fill(snake.color[0], snake.color[1], snake.color[2])
-    for ball in snake.snake:
+    for ball in range(len(snake.snake) - 5):
+        if abs(cam.eyeX - map.sizeX / 2.0 - snake.snake[ball][0]) - snake.size < 0 and\
+           abs(cam.eyeY - map.sizeY / 2.0 - snake.snake[ball][1]) - snake.size < 0 and\
+           abs(cam.eyeZ - map.sizeZ / 2.0 - snake.snake[ball][2]) - snake.size < 0    :
+            map.announcedTextFrames = 120
+            map.announcedText       = "You died with " + str(len(snake.snake)) + " score"
+            cam.eyeX                = map.sizeX / 2.0 + snake.size
+            cam.eyeY                = map.sizeY / 2.0
+            cam.eyeZ                = map.sizeZ / 2.0
+            cam.lookingAtX          = 0
+            cam.lookingAtY          = 0
+            cam.lookingAtZ          = 0
+            cam.yaw                 = 0
+            cam.pitch               = 90
+            map.frameCount          = 0
+            snake.snake             = [[0, 0, 0]] * 100
+            break
         pushMatrix()
-        translate(ball[0], ball[1], ball[2])
-        #sphere(snake.size)
+        translate(snake.snake[ball][0], snake.snake[ball][1], snake.snake[ball][2])
+        sphere(snake.size)
         popMatrix()
     popMatrix() # End of snake matrix
 
