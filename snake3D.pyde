@@ -4,17 +4,22 @@ def setup():
     textAlign(CENTER, CENTER)
     textMode(SHAPE)
     rectMode(CENTER)
+    class config: # Config vars that you should adjust to your preferences
+        fov            = 270 # Defines the field of view. I recommend between 180 (to avoid headaches) and 270 (to maximize vision)
+        sensivityYaw   = 3   # The sensivity of  yaw  rotation (left - right). 3 by default
+        sensivityPitch = 2   # The sensivity of pitch rotation (up   -  down). 2 by default
+
     class snake:
         speed = width / 200
-        size  = width / 40
-        snake = [[0, 0, 0]] * 100
+        size  = width / 25
+        snake = [[0, 0, 0]] * 50
         color = 100, 200, 100
 
     class map:
-        sizeX      = width
-        sizeY      = height
-        sizeZ      = width
-        frameCount = 0
+        sizeX                 = width
+        sizeY                 = height
+        sizeZ                 = width
+        frameCount            = 0
         announcedText         = ""
         announcedTextFrames   = 0
 
@@ -23,7 +28,7 @@ def setup():
         Y             = random(-map.sizeY / 2, map.sizeY / 2)
         Z             = random(-map.sizeZ / 2, map.sizeZ / 2)
         color         = 200,  50,  50
-        size          = width / 50
+        size          = width / 40
         eatHitboxSize = 3 * size 
         touched       = False
     
@@ -39,9 +44,9 @@ def setup():
         zAxisIsUp      = 0
         yaw            = 0
         pitch          = 90
-        sensivityYaw   = 3
-        sensivityPitch = 2
-        fov            = 180 # FOV (field of view) in degres, converted later on to radians
+        sensivityYaw   = config.sensivityYaw
+        sensivityPitch = config.sensivityPitch
+        fov            = config.fov
         aspectRatio    = width / float(height)
         nearClipPlane  = 1
         farClipPlane   = map.sizeX * 1.414213562
@@ -56,9 +61,6 @@ def setup():
         LEFT_ARROW  = False
         DOWN_ARROW  = False
         RIGHT_ARROW = False
-        
-        F           = False
-        INFERIOR    = False
         
 def keyPressed():
     if keyCode == 60:
@@ -109,13 +111,13 @@ def draw():
     map.announcedTextFrames -= 1
     map.frameCount          += 1
     if keys.LEFT_ARROW and not keys.RIGHT_ARROW:
-        cam.yaw = (cam.yaw - 3) % 360
+        cam.yaw = (cam.yaw - cam.sensivityYaw) % 360
     if keys.RIGHT_ARROW and not keys.LEFT_ARROW:
-        cam.yaw = (cam.yaw + 3) % 360
+        cam.yaw = (cam.yaw + cam.sensivityYaw) % 360
     if keys.UP_ARROW and not keys.DOWN_ARROW:
-        cam.pitch = constrain(cam.pitch - 2, 1, 179)
+        cam.pitch = constrain(cam.pitch - cam.sensivityPitch, 1, 179)
     if keys.DOWN_ARROW and not keys.UP_ARROW:
-        cam.pitch = constrain(cam.pitch + 2, 1, 179)
+        cam.pitch = constrain(cam.pitch + cam.sensivityPitch, 1, 179)
     cam.lookingAtX = cam.eyeX + snake.speed * 10 * sin(radians(cam.pitch)) * cos(radians(cam.yaw))
     cam.lookingAtY = cam.eyeY - snake.speed * 10 * cos(radians(cam.pitch))
     cam.lookingAtZ = cam.eyeZ + snake.speed * 10 * sin(radians(cam.pitch)) * sin(radians(cam.yaw))
@@ -133,12 +135,12 @@ def draw():
     if  abs(cam.eyeX - map.sizeX / 2- apple.X) - apple.eatHitboxSize < 0\
     and abs(cam.eyeY - map.sizeY / 2- apple.Y) - apple.eatHitboxSize < 0\
     and abs(cam.eyeZ - map.sizeZ / 2- apple.Z) - apple.eatHitboxSize < 0: # Eating apple
-        for i in range(50):
+        for i in range(25):
             snake.snake.insert(0, (snake.snake[0]))
         apple.X = random(-map.sizeX / 2, map.sizeX / 2)
         apple.Y = random(-map.sizeY / 2, map.sizeY / 2)
         apple.Z = random(-map.sizeZ / 2, map.sizeZ / 2)
-    if frameCount % 5 == 0:
+    if frameCount % 10 == 0:
         for index in range(len(snake.snake)):
             if index == len(snake.snake) - 1:
                 snake.snake[index] = [cam.eyeX - map.sizeX / 2, cam.eyeY - map.sizeY / 2, cam.eyeZ - map.sizeZ / 2]
